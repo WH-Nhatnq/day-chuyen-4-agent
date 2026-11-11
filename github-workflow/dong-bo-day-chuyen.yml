@@ -1,0 +1,62 @@
+# Kéo bản mới của dây chuyền 4 agent từ repo trung tâm (công khai) WH-Nhatnq/day-chuyen-4-agent
+# về .claude/ của repo này và mở PR "Cập nhật dây chuyền 4 agent" nếu có thay đổi.
+# Chạy: mỗi thứ Hai, hoặc bấm tay ở tab Actions → "Đồng bộ dây chuyền 4 agent" → Run workflow.
+# Chỉ đụng .claude/agents/nb-*.md, .claude/commands/day-chuyen*.md, .claude/day-chuyen/.
+# Không đụng business/, docs/, code. Không tự merge: bạn xem PR rồi bấm Merge.
+# Cần bật một lần: Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests".
+name: Đồng bộ dây chuyền 4 agent
+
+on:
+  schedule:
+    - cron: "0 1 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: dong-bo-day-chuyen
+  cancel-in-progress: true
+
+jobs:
+  dong-bo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lấy bản mới từ repo trung tâm
+        uses: actions/checkout@v4
+        with:
+          repository: WH-Nhatnq/day-chuyen-4-agent
+          path: _day-chuyen-src
+
+      - name: Đồng bộ
+        run: |
+          bash _day-chuyen-src/scripts/dong-bo.sh "$GITHUB_WORKSPACE"
+          rm -rf _day-chuyen-src
+
+      - name: Mở PR nếu có thay đổi
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -z "$(git status --porcelain -- .claude)" ]; then
+            echo "Không có gì mới."; exit 0
+          fi
+          VER=$(sed -n 's/^commit: //p' .claude/day-chuyen/PHIEN-BAN)
+          BR="day-chuyen/cap-nhat"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -C "$BR"
+          git add .claude
+          git commit -m "Cập nhật dây chuyền 4 agent (trung tâm $VER)"
+          git push -f origin "$BR"
+          if gh pr view "$BR" --json state -q .state 2>/dev/null | grep -q OPEN; then
+            echo "PR đã mở, đã cập nhật nhánh."
+          else
+            gh pr create --base "${{ github.event.repository.default_branch }}" --head "$BR" \
+              --title "Cập nhật dây chuyền 4 agent ($VER)" \
+              --body "Bản mới của 4 agent + lệnh /day-chuyen từ https://github.com/WH-Nhatnq/day-chuyen-4-agent (commit $VER). Chỉ đổi file trong .claude/. Xem thay đổi rồi bấm Merge." \
+            || echo "::warning::Không tạo được PR (cần bật 'Allow GitHub Actions to create and approve pull requests'). Nhánh $BR đã được đẩy lên, tạo PR tay."
+          fi
