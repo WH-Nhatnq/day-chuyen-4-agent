@@ -60,3 +60,4 @@ Sản phẩm đang ở đâu so với thiết kế: `docs/tien-do-theo-thiet-ke.
 - Sửa agent/lệnh/mẫu ở repo trung tâm `day-chuyen-4-agent` (một chỗ).
 - Mỗi repo sản phẩm có Action *Đồng bộ dây chuyền 4 agent*: chạy mỗi thứ Hai, hoặc bấm *Run workflow* ở tab Actions → mở PR "Cập nhật dây chuyền 4 agent" → bạn Merge.
 - Phiên cloud đang chạy dùng bản cũ cho tới khi mở phiên mới sau khi Merge.
+- Repo đang dùng bản nào: xem `.claude/day-chuyen/PHIEN-BAN` (commit của repo trung tâm).
